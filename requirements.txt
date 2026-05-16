@@ -1,0 +1,33 @@
+# --- Web framework ---
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.20
+pydantic==2.10.3
+
+# --- Database ---
+SQLAlchemy==2.0.36
+psycopg[binary]==3.2.3       # Postgres driver. SQLite works without this.
+alembic==1.14.0
+
+# --- Auth (PyJWT for both Clerk and Supabase) ---
+PyJWT[crypto]==2.10.1
+
+# --- Storage ---
+boto3==1.35.81               # S3 / R2 / MinIO
+
+# --- PDF processing (also used by the engine) ---
+pypdf==5.1.0
+reportlab==4.2.5             # for the AI-verified stamp + fillable forms
+
+# --- Engine deps (mirrored from the existing verifier) ---
+PyYAML==6.0.2
+Pillow==11.0.0
+pytesseract==0.3.13          # Tesseract Python wrapper (system tesseract still required)
+anthropic==0.40.0            # Production vision OCR
+
+# --- Stripe (pass-through billing) ---
+stripe==11.2.0
+
+# --- Dev / tests ---
+pytest==8.3.4
+httpx==0.28.1

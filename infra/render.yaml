@@ -1,0 +1,42 @@
+# Render.com deployment - DEMO MODE (free tier, no Postgres add-on, no auth, no Stripe).
+# Push the cfi_verifier_app folder to a GitHub repo, then in Render:
+#   New + -> Blueprint -> connect the repo -> apply.
+# Render reads this file and provisions one web service.
+#
+# After the first deploy, set ANTHROPIC_API_KEY in Render Dashboard -> Environment.
+# (We do not list secrets in this file so the repo can be public if needed.)
+
+services:
+  - type: web
+    name: cfi-verifier-demo
+    env: docker
+    dockerfilePath: ./infra/Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeploy: true
+    plan: free            # spins down after 15 min idle, ~30s cold start
+    envVars:
+      - key: ENV
+        value: prod
+      - key: DEBUG
+        value: "false"
+      - key: AUTH_PROVIDER
+        value: dev        # no login screen; auto-provisions a shared Vicky user
+      - key: STRIPE_ENABLED
+        value: "false"
+      - key: STORAGE_BACKEND
+        value: local      # ephemeral - data lost on restart, fine for demo
+      - key: STORAGE_LOCAL_DIR
+        value: /app/storage
+      - key: VISION_PROVIDER
+        value: anthropic
+      - key: ANTHROPIC_MODEL
+        value: claude-sonnet-4-5
+      # Set VISION_FORCE=true the first time you upload a packet to confirm
+      # the Anthropic key is wired. Flip back to false (or unset) for normal
+      # use so cost stays at ~$0.04/packet.
+      - key: VISION_FORCE
+        value: "false"
+      # ANTHROPIC_API_KEY: set in the Render dashboard, NOT in this file.
+      - key: MAX_PACKET_SIZE_MB
+        value: "100"      # free tier has limited memory; cap upload size

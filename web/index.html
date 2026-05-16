@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#a82237">
+<title>California Fruit Inc — AI Sorting Quality Verifier</title>
+<link rel="stylesheet" href="/ui/static/app.css">
+<script>window.AUTH_PROVIDER = "AUTH_PROVIDER_PLACEHOLDER";</script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <img src="/ui/static/california_fruit_logo.svg" class="logo" alt="California Fruit">
+    <div>
+      <h1>AI Sorting Quality Verifier</h1>
+      <p class="subtitle">California Fruit, Inc. · Sanger, CA</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span id="user-chip" class="user-chip" hidden>
+      <span class="user-name"></span>
+      <button class="link" id="signature-btn" title="Manage signature">✎ signature</button>
+      <button class="link" id="logout-btn">sign out</button>
+    </span>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist">
+  <button class="tab active" data-view="recent" role="tab" aria-selected="true">Recent packets</button>
+  <button class="tab" data-view="customers" role="tab">By customer</button>
+  <button class="tab" data-view="upload" role="tab">Upload</button>
+  <button class="tab" data-view="audit" role="tab" data-admin>Audit log</button>
+</nav>
+
+<main id="app">
+
+  <!-- ========== Recent packets ========== -->
+  <section id="view-recent" class="view active" role="tabpanel">
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-label">Packets verified</div><div class="kpi-value" id="kpi-packets">—</div></div>
+      <div class="kpi"><div class="kpi-label">Cross-references checked</div><div class="kpi-value" id="kpi-pass">—</div></div>
+      <div class="kpi"><div class="kpi-label">Flags raised</div><div class="kpi-value" id="kpi-fail" style="color: var(--orange)">—</div></div>
+      <div class="kpi"><div class="kpi-label">OCR cost (this month)</div><div class="kpi-value" id="kpi-cost">—</div></div>
+    </div>
+    <h2 class="section-title">Recent verifications</h2>
+    <div class="packet-grid" id="packet-grid">
+      <div class="empty-state">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ========== Customer index ========== -->
+  <section id="view-customers" class="view" role="tabpanel" hidden>
+    <h2 class="section-title">Customers</h2>
+    <p class="hint">Drill into a customer to see all of their packets.</p>
+    <div class="customer-grid" id="customer-grid">
+      <div class="empty-state">Loading…</div>
+    </div>
+  </section>
+
+  <!-- ========== Upload ========== -->
+  <section id="view-upload" class="view" role="tabpanel" hidden>
+    <h2 class="section-title">Upload a packet</h2>
+    <form id="upload-form" class="upload-form">
+      <label for="upload-file" class="dropzone" id="dropzone">
+        <span class="dz-icon">⬆</span>
+        <span class="dz-text">Drop a packet PDF here, or tap to choose</span>
+        <span class="dz-hint">10–80 page packets verify in 60–90 seconds</span>
+        <input type="file" id="upload-file" accept="application/pdf" hidden>
+      </label>
+      <div class="upload-row">
+        <input type="text" id="upload-name" placeholder="Display name (optional)">
+        <button class="btn btn-primary" type="submit">Verify</button>
+      </div>
+      <div id="upload-status" class="upload-status"></div>
+    </form>
+  </section>
+
+  <!-- ========== Packet detail ========== -->
+  <section id="view-detail" class="view" role="tabpanel" hidden>
+    <button class="back-btn" id="detail-back">← Back</button>
+    <header class="detail-head">
+      <div>
+        <h2 id="detail-title"></h2>
+        <p class="muted" id="detail-sub"></p>
+      </div>
+      <div class="detail-actions">
+        <a id="detail-pdf"  class="btn btn-secondary" target="_blank" rel="noopener">Verified PDF</a>
+        <a id="detail-xlsx" class="btn btn-secondary" target="_blank" rel="noopener">Cross-ref XLSX</a>
+        <button id="detail-rescan" class="btn btn-secondary">Re-run</button>
+        <button id="detail-rescan-new" class="btn btn-secondary">Re-upload corrected</button>
+      </div>
+    </header>
+
+    <div class="detail-grid">
+
+      <div class="detail-main">
+        <div class="card">
+          <h3>Sub-packets</h3>
+          <div id="subpackets"></div>
+        </div>
+
+        <div class="card">
+          <h3>Cross-reference matrix <span class="badge">click a cell to edit</span></h3>
+          <div class="matrix-wrap"><table id="matrix" class="matrix"></table></div>
+        </div>
+
+        <div class="card">
+          <h3>Checks <span class="badge" id="checks-count"></span></h3>
+          <div id="checks-list" class="checks-list"></div>
+        </div>
+      </div>
+
+      <aside class="detail-side">
+        <div class="card">
+          <h3>Pages</h3>
+          <div id="pages-list" class="pages-list"></div>
+        </div>
+
+        <div class="card sign-card">
+          <h3>Sign off &amp; archive</h3>
+          <p class="muted">When everything looks right, sign and archive. The PDF gets stamped with your signature and saved to the cloud archive under <code>customer/year/work-order/</code>.</p>
+          <textarea id="signoff-notes" placeholder="Optional notes (e.g. 'rechecked sulfur reading with QC')"></textarea>
+          <button class="btn btn-primary" id="signoff-btn">Sign off &amp; archive</button>
+          <p class="muted" id="signoff-status"></p>
+        </div>
+
+        <div class="card">
+          <h3>Field corrections</h3>
+          <div id="overrides-list" class="overrides-list"></div>
+        </div>
+      </aside>
+
+    </div>
+  </section>
+
+  <!-- ========== Audit log ========== -->
+  <section id="view-audit" class="view" role="tabpanel" hidden>
+    <h2 class="section-title">Audit log</h2>
+    <table class="audit-table" id="audit-table"><thead><tr>
+      <th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th>
+    </tr></thead><tbody></tbody></table>
+  </section>
+
+</main>
+
+<!-- ========== Modals ========== -->
+
+<div class="modal-overlay hidden" id="modal-edit">
+  <div class="modal">
+    <header><h3>Edit field</h3>
+      <button class="close" data-close>×</button></header>
+    <form id="edit-form">
+      <label>Field</label>
+      <input type="text" id="edit-field" readonly>
+      <label>Page</label>
+      <input type="text" id="edit-page" readonly>
+      <label>Current value</label>
+      <input type="text" id="edit-current" readonly>
+      <label>Correct value</label>
+      <input type="text" id="edit-new" required autofocus>
+      <label>Why? (audit log)</label>
+      <textarea id="edit-rationale" rows="2"
+                placeholder="e.g. transcription error on Extra-Case SQR p13"></textarea>
+      <p class="muted">The verifier will re-run and re-check every page that referenced this value.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+        <button type="submit" class="btn btn-primary">Save &amp; re-verify</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-signature">
+  <div class="modal">
+    <header><h3>Your signature</h3>
+      <button class="close" data-close>×</button></header>
+    <p class="muted">Sign once. Used to stamp every packet you sign off on.</p>
+    <canvas id="sig-canvas" width="600" height="180"
+            style="touch-action:none;border:2px dashed var(--slate-300);border-radius:8px;width:100%;background:#fff"></canvas>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="sig-clear">Clear</button>
+      <button class="btn btn-primary" id="sig-save">Save signature</button>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/static/app.js"></script>
+</body>
+</html>

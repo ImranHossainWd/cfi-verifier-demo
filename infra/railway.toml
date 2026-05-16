@@ -1,0 +1,17 @@
+# Railway deployment config.
+# Connect a GitHub repo, then `railway up` from your laptop. Railway auto-
+# detects Dockerfile and reads this for build/run hints.
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "infra/Dockerfile"
+
+[deploy]
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 2 --proxy-headers"
+healthcheckPath = "/healthz"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Railway-managed Postgres add-on automatically sets DATABASE_URL.
+# Add an R2 bucket in the Railway project + set the S3_* env vars in the dashboard.
